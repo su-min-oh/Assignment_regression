@@ -1,0 +1,65 @@
+---
+title: "Assignment#6 - Regression"
+author: "Sumin Oh"
+date: "2024-11-16"
+output: html_document
+---
+
+## 1. Find an independent variable to predict your time-series
+
+```{r}
+library(readr)
+library(data.table)
+library(ggplot2)
+
+sales = read.csv("/Users/suminoh/Downloads/time series data.csv")
+
+setDT(sales)
+str(sales)
+plot(sales)
+cor(sales)
+ggplot(sales,aes(x=temperature,y=ProductP2))+geom_point(color="purple")+geom_smooth(method="lm")
+```
+
+The data is the time-series, consists of the sales of 5 products and temperature. As I conducted the correlation analysis, product 2 and the temperature had the highest correlation, so I decided to take temperature as a independent variable, which affects the sales of product2. 
+
+
+## 2. Perform regression
+```{r}
+model = lm(ProductP2~temperature,data=sales)
+```
+
+## 3. Perform Model Acceptance Steps and show the interpretation of the model output
+```{r}
+summary(model)
+```
+
+- Adjusted R squared is 0.6005, meaning that 60% of variation in the dependent variable(sales of P2) can be explained by this independent variable(temperature). Usually it means that the model is explaining the data well when the R squared is close to 1. So this model is considered meaningful.
+
+- t value and p value : t value is -12.24 and p value is less than 2e-16. If we actually do calculate the critical value with the formula qt(.95,98), it's 1.66, and the t value is far less than this. Also, as the p value is much smaller than 0.05, this model can be meaningful. 
+
+- F statistic : 149.8 with p value of less than 2.2e-16. If we calculate critical F value with the formula qf(.95,1,98), it's 3.93 and the F statistics is much larger than this. Also, p value of it is much smaller than 0.05. All of these mean that this model can be meaningful.
+
+## 4. Perform Residual Analysis and explain the insights
+
+```{r}
+#1. Normality
+salesres = data.table('res'=model$residuals)
+ggplot(salesres,aes(x=res))+geom_histogram(bins=20,fill="purple",color="black")
+```
+
+The histogram shows the residuals are not normally distributed.
+
+```{r}
+#2. Equal Variance
+salesres[,fitted:=model$fitted.values]
+ggplot(salesres,aes(x=fitted,y=res))+geom_point(color="purple")+geom_smooth(method="lm")
+```
+
+This scatter plot shows that residuals are randomly scattered without any patterns. Meaning that residuals are not related to each other.
+
+```{r}
+acf(salesres$res)
+```
+
+Acf values are within the confidence interval most of the time, but at Lag 1,2,3, the value are beyond the interval line. It implies that the data can have a weak autocorrelation, and the model may needs extra variable to analyze more accurately.
